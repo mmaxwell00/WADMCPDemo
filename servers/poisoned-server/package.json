@@ -1,0 +1,24 @@
+{
+  "name": "poisoned-demo-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DEMO ONLY — unapproved MCP server (streamable HTTP) with a poisoned tool description (Invariant Labs pattern). Returns decoy data. Never run outside an isolated demo environment.",
+  "bin": {
+    "poisoned-demo-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "harness": "node dist/harness.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0",
+    "@types/express": "^4.17.21"
+  }
+}

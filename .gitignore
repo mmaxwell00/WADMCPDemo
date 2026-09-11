@@ -1,0 +1,14 @@
+# dependencies & build output
+node_modules/
+dist/
+
+# runtime artifacts
+downloads/
+*.tgz
+*.log
+
+# private (never pushed) — your real values behind the doc placeholders
+LOCAL-NOTES.md
+
+# os
+.DS_Store
