@@ -99,14 +99,21 @@ sbx mcp add poisoned-demo --url http://localhost:7801/mcp --skip-ssrf-check
 **Optional Beat 2b — endpoint swap denied (the rug-pull defense, ~30s).** The
 permit is IDENTITY-pinned (name + `identityURL`), not name-only. Prove it:
 ```bash
-sbx mcp add approved-downloader --url http://localhost:7801/mcp --skip-ssrf-check
+sbx mcp rm approved-downloader                                                     # evaluate the add fresh
+sbx mcp add approved-downloader --url http://localhost:7801/mcp --skip-ssrf-check  # → DENIED
+sbx mcp add approved-downloader --url http://localhost:7802/mcp --skip-ssrf-check  # → ALLOW (restores the demo)
 ```
-→ **DENIED** ("no registration policy rule permits this server") — the *approved
-name* pointed at a different endpoint is refused. VERIFIED live.
+→ The middle command is refused ("no registration policy rule permits this
+server") — the *approved name* pointed at a different endpoint gets no matching
+permit.
 > "You can't squat the approved name and swap the endpoint underneath it — we
 > pin the identity, not just the label. That's the rug-pull class, closed."
-(Then `sbx mcp add approved-downloader --url http://localhost:7802/mcp
---skip-ssrf-check` → ALLOW, to reset.)
+
+⚠️ **The `rm` line matters.** `setup.sh` already registered this name, and an add
+over an existing registration may return a name/duplicate error instead of the
+policy deny — which would kill the punchline. The deny itself was verified live,
+but *with* the `rm` first. **Run this exact three-line sequence in your dry run**
+before using it on stage.
 
 **Audit-log payoff — VERIFIED.** Docker Home → AI Platform → **Audit logs**,
 set **Event type = Server Registration** (or Decision = Deny). Your CLI deny
@@ -147,13 +154,14 @@ Prompt, Network Egress, Filesystem Mount — the whole gateway is logged.)
 > get a name on screen. Built-in `sbx run claude`/`shell` will NOT populate it.
 
 ### In-sandbox recipe (agent-attributed beats) — VERIFIED
-Requires an org **Filesystem access** allow rule for the mounted workspace path
-(YOUR_ORG has `mcp-demo-workspace` → allow READ/WRITE on
-`…/sandbox-workspace`). Then:
+Requires an org **Filesystem access** allow rule (READ+WRITE) for this laptop's
+absolute `sandbox-workspace` path — you create it; see `DEMO-DAY.md` §A2.2.
+`demo/run-sandbox-beat.sh` does all of the below for you; the raw steps are:
 ```bash
-sbx run shell -d --name gov-demo <repo>/sandbox-workspace
+REPO="$(pwd)"    # run from the repo root
+sbx run shell -d --name gov-demo "$REPO/sandbox-workspace"
 sbx mcp load approved-downloader --sandbox gov-demo          # attach approved to the gateway
-sbx exec gov-demo -- node <repo>/sandbox-workspace/gateway-client.mjs
+sbx exec gov-demo -- node "$REPO/sandbox-workspace/gateway-client.mjs"
 #   → lists gateway tools, calls npm_download → pulls left-pad (ALLOW), attempts mcp-add poisoned (DENY)
 ```
 Inside the sandbox the gateway is `MCP_GATEWAY_URL=http://mcp-gateway.docker.internal/mcp`.
@@ -164,21 +172,24 @@ Note: a fresh org fs policy can take ~30–60s to reach the local daemon
 
 ## BEAT 3 — Governed, ALLOW (~2–2.5 min)
 
-The approved server was registered in pre-stage (step 4). Have the agent call
-`npm_download` to pull an npm package — the requirement's "download a file via
-npm" — e.g. `package: "left-pad"` (the iconic npm supply-chain package).
+An agent **inside a governed sandbox** calls `npm_download` through the gateway —
+the requirement's "download a file via npm":
+```bash
+demo/run-sandbox-beat.sh shell gov-demo
+```
+→ `npm pack left-pad` returns the tarball path, size, shasum + integrity. The same
+run also shows the agent's `mcp-add` of the poisoned server **denied**.
 
-→ Tool call **succeeds**: it runs `npm pack left-pad`, returns the tarball path,
-size, shasum + integrity. Audit log shows an **allow** for
-`approved-downloader:npm_download`.
+Audit log (**Event type = Tool Invocation**):
+`approved-downloader:npm_download → ALLOW` and `mcp-add → DENY`.
 > "Same agent, same gateway. An unvetted npm-wrapping server was blocked at the
 > door; the curated one pulls the package and every call is logged. One
 > chokepoint: authenticated, authorized, logged."
 
-If the approved server wasn't pre-registered, register it live:
-```bash
-sbx mcp add approved-downloader --url http://localhost:7802/mcp --skip-ssrf-check
-```
+**Prereq:** the org **Filesystem access** policy must allow this laptop's
+`sandbox-workspace` absolute path (`DEMO-DAY.md` §A2.2). There is no CLI way to
+invoke a registered tool outside a sandbox — the gateway only exists inside one,
+which is why Beat 3 is the sandbox path.
 
 ---
 
@@ -197,8 +208,13 @@ Do **not** cut Beat 2's audit read — the deny line is the whole point.
 
 ## FAILURE FALLBACKS
 - Live agent won't obey the poison → use the harness (pre-tested).
-- Banner didn't flip to org-managed → policy isn't enforced for `DEVELOPER_ACCOUNT`;
-  re-check enforcement + that the user holds a governance seat.
+- Beat 2 didn't deny → the MCP policy isn't enforced for your developer account;
+  confirm the policy exists and that the account holds an AI Governance seat.
+  **Never use the `sbx mcp ls` banner as your enforcement signal** — it reads
+  "managed by you" whether or not org policy is enforcing.
+- Sandbox `mount policy denied` → filesystem policy path ≠ this laptop's
+  `sandbox-workspace`; or wait ~60s / `sbx daemon restart`.
+- `npm pack` hangs then errors → no npm-registry access from this network.
 - `identityURL` mismatch → the pinned value must equal what `sbx mcp inspect`
   reports; re-paste and re-enforce.
 - Audit entry slow to appear → have a screenshot from your dry run ready.

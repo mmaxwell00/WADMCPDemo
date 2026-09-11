@@ -11,6 +11,10 @@ POISONED_DIR="$REPO_DIR/servers/poisoned-server"
 APPROVED_DIR="$REPO_DIR/servers/approved-server"
 POISONED_PORT="${POISONED_PORT:-7801}"
 APPROVED_PORT="${APPROVED_PORT:-7802}"
+# Export so reset.sh sees the same values if you override them in this shell.
+# NOTE: changing APPROVED_PORT also requires updating the identityURL pinned in
+# your org MCP policy, or approved-downloader will be DENIED.
+export POISONED_PORT APPROVED_PORT
 POISONED_URL="http://localhost:${POISONED_PORT}/mcp"
 APPROVED_URL="http://localhost:${APPROVED_PORT}/mcp"
 
@@ -28,6 +32,13 @@ command -v curl >/dev/null || { fail "curl not found"; exit 1; }
 if ! sbx mcp ls >/dev/null 2>&1; then fail "sbx not ready / not logged in — run: sbx login"; exit 1; fi
 ok "sbx $(sbx version 2>/dev/null | awk '{print $3}')  •  node $(node --version)"
 ORG_LINE="$(sbx mcp ls 2>/dev/null | head -1)"; ok "governance: ${ORG_LINE}"
+warn "^ confirm that is the org your MCP policy lives in (wrong org = confusing denies later)"
+# Beat 3 really downloads from the npm registry — catch guest-WiFi/proxy now, not on stage.
+if npm view left-pad version >/dev/null 2>&1; then
+  ok "npm registry reachable (Beat 3 npm pack will work)"
+else
+  warn "npm registry NOT reachable — Beat 3 (npm pack) will hang ~60s then fail on this network"
+fi
 
 say "Build servers (if needed)"
 for d in "$POISONED_DIR" "$APPROVED_DIR"; do

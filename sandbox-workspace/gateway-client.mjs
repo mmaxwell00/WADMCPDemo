@@ -5,7 +5,13 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
-const url = new URL(process.env.MCP_GATEWAY_URL);
+// Inside a Docker sandbox the gateway is injected as MCP_GATEWAY_URL. Fall back
+// to the documented default rather than throwing an unhandled TypeError on stage.
+const GATEWAY_DEFAULT = "http://mcp-gateway.docker.internal/mcp";
+if (!process.env.MCP_GATEWAY_URL) {
+  console.error(`[warn] MCP_GATEWAY_URL not set — falling back to ${GATEWAY_DEFAULT}`);
+}
+const url = new URL(process.env.MCP_GATEWAY_URL || GATEWAY_DEFAULT);
 const transport = new StreamableHTTPClientTransport(url);
 const client = new Client({ name: "sandbox-agent-sim", version: "0.1.0" });
 await client.connect(transport);
@@ -31,8 +37,11 @@ if (dl) {
   console.log("npm_download not found in gateway tool list");
 }
 
-// Look for a primordial/dynamic register tool so an agent could add a server.
-const reg = tools.find((t) => /add|register|mcp/i.test(t.name));
+// Look for the gateway's dynamic "add a server" primordial. Match it precisely —
+// a loose /mcp/ pattern would also hit mcp-find / mcp-exec / mcp-config-set and
+// call the wrong tool with the wrong arguments.
+const reg = tools.find((t) => t.name === "mcp-add")
+  ?? tools.find((t) => /^mcp[-_]?add$|(^|[-_])register([-_]|$)/i.test(t.name));
 console.log("\n=== BEAT 2 (agent-attributed): attempt poisoned via gateway ===");
 if (reg) {
   console.log("primordial register tool:", reg.name);

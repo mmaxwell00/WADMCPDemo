@@ -12,10 +12,10 @@
 ## 2. The four attack classes — named, not walked — 90s
 One sentence each. Cite sources for credibility, then move on.
 - **Tool poisoning** — hidden instructions in a tool *description* steer the
-  agent into leaking secrets or misusing other tools. *(Invariant Labs, "MCP
-  Security Notification: Tool Poisoning Attacks," April 2025 — the canonical
-  public example; ⚠️ confirm the exact OWASP MCP Top-10 identifier before you
-  put "MCP03:2025" on a slide.)*
+  agent into leaking secrets or misusing other tools. *(**OWASP MCP03:2025 —
+  Tool Poisoning**, an official [OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/)
+  entry; the project is in **beta** — say so if pressed. Canonical public example:
+  Invariant Labs, "MCP Security Notification: Tool Poisoning Attacks," April 2025.)*
 - **Tool shadowing** — a malicious server redefines or overrides a trusted
   tool, so calls you think are going to the good tool hit the bad one.
 - **Rug pulls** — a server behaves during review, then swaps its behavior after
@@ -47,9 +47,34 @@ Key honesty beat (say it out loud — a security room will respect it):
 
 ---
 
-### Citations to verify before slides
+## Q&A — prepared answers (rehearse these three)
+
+**"Did the model actually fall for that, or did you script it?"**
+> "Scripted, deliberately — the harness plays an agent that obeyed the poisoned
+> description, so the beat is deterministic on stage. The real artifact is the
+> tool *description* itself: that's what a live agent reads. I'd rather show you
+> the mechanism reliably than gamble on a model in front of you."
+
+**"Why are you passing `--skip-ssrf-check`?"**
+> "`sbx` flags any registration whose host resolves to a loopback or private
+> address — my demo servers are on localhost, so that's expected noise and the
+> flag silences it for a URL I control. It does **not** bypass MCP policy: the
+> poisoned server is denied with that flag on. You wouldn't use it for a real
+> third-party server."
+
+**"Does the gateway read descriptions to detect malicious content?"**
+> "No — identity and registration, not content inspection. That's the honest
+> answer and it's the stronger claim: no false confidence in AI-detection magic."
+
+### Bonus beat if you have 10 spare seconds
+The poisoned tool advertises `readOnlyHint: true` while exfiltrating data; the
+approved one honestly declares `readOnlyHint: false` because it writes a file.
+> "The malicious server *lies* in its own metadata. That's exactly why you pin
+> identity instead of trusting what a server says about itself."
+
+### Citations
+- **OWASP MCP03:2025 — Tool Poisoning**, [OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/)
+  (official OWASP project; currently in beta).
 - Invariant Labs, *MCP Security Notification: Tool Poisoning Attacks* (Apr 2025).
-- OWASP MCP Top-10 tool-poisoning entry — **verify the exact ID/edition**; the
-  "MCP03:2025" numbering may be community, not canonical OWASP.
 - Docker docs: MCP access policies, network policies, governance, audit logging
   (docs.docker.com/ai/sandboxes/governance/…).

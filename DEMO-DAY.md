@@ -1,97 +1,130 @@
 # DEMO DAY — Docker MCP Governance
 
-The one page to follow when presenting. Talk track is in `talking-points.md`;
-full beat detail + fallbacks in `runbook.md`. Scripts live in `demo/`.
+The one page to follow when presenting. Talk track: `talking-points.md`.
+Full beat detail + fallbacks: `runbook.md`. Scripts: `demo/`.
 
 ---
 
 ## A. One-time setup on THIS laptop
-Do this once per machine (e.g. your company laptop), well before demo day.
+Do all of this once per machine, well before demo day.
 
-1. **Prereqs**
-   - Docker Desktop running; `sbx` installed (`sbx version`).
-   - `sbx login` → sign in so `sbx mcp ls` shows `org: YOUR_ORG`.
-     *(This is your `DEVELOPER_ACCOUNT` identity — the governed developer.)*
-   - Node 18+ (`node --version`). Ports **7801** and **7802** free.
-2. **Get the repo onto the laptop** (any location).
-3. **Confirm the org policies exist** in Docker Home → AI Platform → **MCP access**:
-   - `mcp-governance-demo` (permits `approved-downloader`, forbids `poisoned-demo`).
-   - These are tenant-wide, so they're already there. If missing, see `policy/org-mcp-policy.cedar`.
-4. **⚠️ Machine-specific step — Filesystem-access path (only needed for the
-   optional in-sandbox beats).** Sandboxes mount a workspace, and the org
-   **Filesystem access** policy allows a specific *absolute path*. That path is
-   different on every machine/user. Run:
+### A0. What this demo requires — read first
+- **Docker AI Governance** — a **separately licensed** add-on. Organization MCP
+  policy and the audit log **do not exist without it**. If your org doesn't have
+  it, this demo cannot run as written.
+- **Two Docker accounts in the same org:**
+  - an **owner** — creates the policies and views the audit log (the MCP access
+    editor is *owner-only*);
+  - a **developer** holding an AI Governance seat — runs the `sbx` CLI in the demo.
+
+  You switch between them: **configure as owner, present as developer.**
+- **Docker Desktop** running and **`sbx`** installed
+  (see <https://docs.docker.com/ai/sandboxes/>) — built against `sbx` v0.42.1.
+- **Node 18+**, ports **7801** and **7802** free, and outbound access to the
+  **public npm registry** (Beat 3 really downloads a package).
+
+### A1. Sign in (developer account)
+```bash
+sbx login
+sbx mcp ls      # confirm it shows your organization
+```
+
+### A2. Create the two org policies — as the OWNER
+They **do not exist until you create them.** Full detail in `policy/README.md`.
+
+1. **AI Platform → MCP access → Create policy** — paste
+   `policy/org-mcp-policy.cedar`.
+   ⚠️ Update the pinned `identityURL` to the endpoint you'll register
+   (default `http://localhost:7802/mcp`).
+2. **AI Platform → Filesystem access → Create policy** — Allow **READ + WRITE**
+   on *this laptop's* absolute workspace path. Get it with:
    ```bash
-   echo "$(cd "$(dirname demo)"; pwd)/sandbox-workspace"   # or just note the repo path + /sandbox-workspace
+   cd /path/to/docker-mcp-governance-demo && echo "$PWD/sandbox-workspace"
    ```
-   Then in Docker Home → AI Platform → **Filesystem access** → `mcp-demo-workspace`,
-   set the allowed path to **this laptop's** `…/docker-mcp-governance-demo/sandbox-workspace`
-   (Allow, READ + WRITE). *A fresh fs policy takes ~30–60s to reach the local
-   daemon; `sbx daemon restart` forces it.*
-   - **Skip step 4 entirely if you only run the core demo** (Beats 1–3 below need
-     no sandbox).
+   This is **required** — Beat 3 runs in a sandbox that mounts that directory,
+   and the path differs on every machine.
+   *A fresh filesystem policy takes ~30–60s to reach the local daemon;
+   `sbx daemon restart` forces it.*
+
+### A3. Prove the whole path once, before demo day
+```bash
+demo/setup.sh
+demo/run-sandbox-beat.sh shell gov-demo    # must actually download left-pad
+demo/reset.sh
+```
 
 ---
 
-## B. Before each demo (bring-up, ~1 min)
+## B. Before each demo (~2 min)
 ```bash
 demo/setup.sh
 ```
-Wait for **`✓ READY`**. It builds, starts both servers, and dry-runs the deny/allow
-so you *know* it works before you're on stage. If it prints `✗ NOT ready`, fix the
-named item (usually: not logged in, or a port in use) and re-run.
+Wait for **`✓ READY`** — it builds, starts both servers, and dry-runs the deny *and*
+the allow so you know it works before you're on stage.
 
 Open two things:
-- A terminal (this is your `DEVELOPER_ACCOUNT` CLI).
-- A browser tab: Docker Home → AI Platform → **Audit logs**.
+- a terminal — your **developer** CLI;
+- a browser tab — Docker Home → AI Platform → **Audit logs**, signed in as the **owner**.
 
 ---
 
 ## C. The live demo (5–7 min)
 
-**Beat 0 — enforcement is central (~20s)**
+### Beat 0 — enforcement is central (~20s)
 ```bash
 sbx mcp ls
 ```
-Say: *"Governed by the org."* (Note: the banner reads `managed by you` even when
-enforced — prove it by behavior in the next beats, not the banner.)
+> ⚠️ The banner reads `LOCAL · managed by you` **even while org policy is actively
+> enforcing**. Do **not** claim it flips to org-managed — it doesn't. Prove
+> enforcement by *behavior* in Beats 2–3.
 
-**Beat 1 — Ungoverned poisoning (~1.5 min)**
+### Beat 1 — Ungoverned poisoning (~1.5 min)
 ```bash
-cd servers/poisoned-server && POISONED_URL=http://localhost:7801/mcp npm run harness; cd -
+( cd servers/poisoned-server && POISONED_URL=http://localhost:7801/mcp npm run harness )
 ```
-Read the `<IMPORTANT>` block aloud; point at `EXFILTRATION SIMULATED` + the decoy key.
+Read the `<IMPORTANT>` block aloud — that's the poisoning. Point at
+`EXFILTRATION SIMULATED` and the decoy AWS key.
 
-**Beat 2 — Governed DENY (~2 min)**
+> Be straight if asked: the harness *plays* a compromised agent deterministically,
+> so the beat can't fail on stage. The poisoned **description** is the real artifact.
+
+### Beat 2 — Governed DENY (~2 min)
 ```bash
 sbx mcp add poisoned-demo --url http://localhost:7801/mcp --skip-ssrf-check
 ```
-→ `blocked by policy`. In the Audit logs tab, set **Event type = Server
-Registration**: read the `poisoned-demo → DENY` row (identity, not content).
+→ `blocked by policy`. In the Audit logs tab set **Event type = Server Registration**
+and read the `poisoned-demo → DENY` row — identity/registration, no content field.
 
-**Beat 3 — Governed ALLOW (~2 min)**
-`approved-downloader` is already registered (setup pre-staged it). Show the
-contrast row: `approved-downloader → ALLOW`. To show a real download live:
-```bash
-sbx mcp inspect approved-downloader        # it's registered & ready
-```
-*(Optional live download / agent-attributed version: see section D.)*
+> **What `--skip-ssrf-check` does** (you *will* be asked): `sbx` flags registrations
+> whose host resolves to a loopback/private address. Our demo servers are on
+> `localhost`, so the flag silences that warning for a URL we control. It does
+> **not** bypass MCP policy — Beat 2 is denied with the flag on. You would not use
+> it for a real third-party server.
 
-**Wrap (~30s)** — tool shadowing / rug pulls / over-broad scopes: same
-identity-pinned model. One chokepoint: authenticated, authorized, logged.
-
----
-
-## D. Optional — in-sandbox, agent-attributed beats
-Needs section A step 4 done. Shows the approved tool actually **pulling an npm
-package through the gateway** (`npm pack left-pad`) from inside a governed
-sandbox, and the agent being blocked from pulling in the poisoned server.
+### Beat 3 — Governed ALLOW: the real download (~2 min)
 ```bash
 demo/run-sandbox-beat.sh shell gov-demo
 ```
-Then in Audit logs → **Event type = Tool Invocation**:
-`approved-downloader:npm_download → ALLOW` and `mcp-add (poisoned) → DENY`.
-*(AGENT column shows a name only for a named cagent; `shell`/`claude` show `–`.)*
+An agent inside a **governed sandbox** calls `npm_download` **through the gateway** —
+`npm pack left-pad` returns the tarball path, size, shasum and integrity. In the same
+run, the agent's attempt to pull in the poisoned server via `mcp-add` is **denied**.
+
+Then in Audit logs set **Event type = Tool Invocation**:
+`approved-downloader:npm_download → ALLOW` and `mcp-add → DENY`.
+
+> "Same agent, same gateway. The unvetted server was blocked at the door; the curated
+> one pulled the package — and every call is logged."
+
+### Wrap (~30s)
+Tool shadowing, rug pulls, over-broad scopes — same identity-pinned model. One
+chokepoint: authenticated, authorized, logged.
+
+---
+
+## D. Optional extras
+- **Beat 2b — endpoint swap denied** (the rug-pull defense, ~30s): see `runbook.md`.
+- A named **cagent** to populate the audit **AGENT** column — built-in `shell` and
+  `claude` both show `–`.
 
 ---
 
@@ -99,7 +132,7 @@ Then in Audit logs → **Event type = Tool Invocation**:
 ```bash
 demo/reset.sh
 ```
-Removes sandboxes, unregisters servers, stops processes, cleans downloads. Org
+Removes sandboxes, unregisters servers, stops processes, cleans downloads. Your org
 policies stay put for next time.
 
 ---
@@ -107,9 +140,10 @@ policies stay put for next time.
 ## F. Troubleshooting (fast)
 | Symptom | Fix |
 |---|---|
-| `setup.sh` says not logged in | `sbx login` (org must be `YOUR_ORG`) |
-| approved-downloader DENIED in setup | org `mcp-governance-demo` policy missing/edited — check MCP access |
-| Beat 2 poisoned NOT denied | same — the forbid/default-deny isn't in effect |
-| sandbox "mount policy denied" | fs policy path ≠ this laptop's workspace path (A.4); or wait ~60s / `sbx daemon restart` |
+| `✗ sbx not ready / not logged in` | `sbx login` — and confirm it's the right org |
+| **MCP access** menu missing in Docker Home | you're signed in as the developer, not an **owner** |
+| `approved-downloader` DENIED during setup | the `identityURL` pinned in your MCP policy ≠ the URL you registered — **check the port** |
+| sandbox `mount policy denied` | filesystem policy path ≠ this laptop's `sandbox-workspace` absolute path (A2.2); or wait ~60s / `sbx daemon restart` |
+| `npm pack` hangs ~60s then errors | no npm-registry access (guest Wi-Fi / proxy). **Test this before you present** |
+| ports 7801/7802 in use | `demo/reset.sh`. If you must change ports, you **must also update the pinned `identityURL`** in the MCP policy — otherwise approved-downloader is denied |
 | Audit page "Something went wrong" | reload the page; it's transient |
-| port 7801/7802 in use | `demo/reset.sh`, or set `POISONED_PORT`/`APPROVED_PORT` env before `setup.sh` |

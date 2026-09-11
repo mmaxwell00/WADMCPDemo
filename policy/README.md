@@ -1,44 +1,55 @@
 # Cedar MCP policy — configure & verify
 
+> **Prerequisite:** your org must have the **Docker AI Governance** licence.
+> Without it there is no MCP access editor and no audit log.
+
 ## Who configures it, who demos it
 - **Configure (owner only):** the MCP access editor is visible only to org
-  **owners**. In `YOUR_ORG` that's **`OWNER_ACCOUNT`
-  (<owner-email>)**. Sign into [Docker Home](https://app.docker.com)
-  as that account → **AI Platform → MCP access → Create policy**.
-- **Demo (governed developer):** run the `sbx` CLI as **`DEVELOPER_ACCOUNT`**. It holds
-  an AI Governance seat (Members → Licenses: AI Governance 2/5 assigned), so its
-  sandboxes are subject to the enforced org policy.
+  **owners** (`OWNER_ACCOUNT` / `<owner-email>`). Sign into
+  [Docker Home](https://app.docker.com) as an owner →
+  **AI Platform → MCP access → Create policy**.
+- **Demo (governed developer):** run the `sbx` CLI as `DEVELOPER_ACCOUNT`. That
+  account must hold an **AI Governance seat** (Docker Home → Members → Licenses)
+  or its sandboxes won't be governed and the demo won't deny anything.
 
-> The `DEVELOPER_ACCOUNT` account is a **Developer**, not an owner — which is why the
-> MCP access editor doesn't appear when you're signed in as it. That's expected;
-> configure as the owner, demo as the developer.
+> The developer account is **not** an owner — which is why the MCP access editor
+> doesn't appear when you're signed in as it. That's expected: configure as the
+> owner, demo as the developer.
 
-## 1. Pin real identities (do this before pasting the policy)
+## 1. Pin the real identity (before pasting the policy)
 The servers are remote endpoints, so Cedar can pin `identityURL`. Register the
 approved server once and read its actual identity:
 ```bash
 sbx mcp add approved-downloader --url http://localhost:7802/mcp --skip-ssrf-check
-sbx mcp inspect approved-downloader     # copy the identityURL it reports
+sbx mcp inspect approved-downloader     # note the url it reports
 ```
-Paste that exact `identityURL` into `org-mcp-policy.cedar` (and the poisoned
-server's, `http://localhost:7801/mcp`, if it differs from the assumed value).
+Paste that exact value into the `identityURL` clause in `org-mcp-policy.cedar`.
 
-## 2. Load & enforce
+> ⚠️ If you ever change the approved server's **port**, you must update this
+> pinned `identityURL` too — otherwise `approved-downloader` will be **denied**.
+
+## 2. Create the policy
 As owner: **AI Platform → MCP access → Create policy**, paste
-`org-mcp-policy.cedar`, and enforce it for the demo user/org.
+`org-mcp-policy.cedar` (Organization scope).
 
-## 3. Verify both states before you present
+You also need a **Filesystem access** policy allowing READ+WRITE on this laptop's
+absolute `sandbox-workspace` path — Beat 3 mounts it. See `DEMO-DAY.md` §A2.2.
+
+## 3. Verify before you present
 ```bash
-# Beat 0 banner — should flip to org-managed once enforced for DEVELOPER_ACCOUNT
-sbx mcp ls
 # Deny (poisoned)
 sbx mcp add poisoned-demo --url http://localhost:7801/mcp --skip-ssrf-check   # → denied
-# Allow (approved) already registered in step 1; confirm a tool call succeeds
+# Allow (approved) — registered in step 1
+sbx mcp ls
 ```
-✅ `sbx mcp ls` shows org-managed governance (not "managed by you").
-✅ Poisoned add is **denied**; the audit entry's `deny_reason` references
-   **identity/registration**, not content scanning.
-✅ Approved register + `npm_download` (npm pack) is **allowed** and logged.
+✅ Poisoned add is **denied**; the audit row shows `poisoned-demo → DENY` under
+   **Event type = Server Registration** — identity/registration, not content scanning.
+✅ Approved register is **allowed**, and `npm_download` (npm pack) succeeds and is
+   logged under **Event type = Tool Invocation** when you run Beat 3.
+
+> ⚠️ **Do not use the `sbx mcp ls` banner to confirm enforcement.** It reads
+> `LOCAL · managed by you` *even while org policy is actively enforcing*. Prove
+> enforcement by behavior: the poisoned add is denied.
 
 ## Where the MCP decision is audited (Beat 2's payoff)
 Not in `sbx policy log` — that stream is **network/filesystem only**
@@ -46,5 +57,5 @@ Not in `sbx policy log` — that stream is **network/filesystem only**
 **AI Governance audit log** in Docker Home (owner view): fields include
 `audit_event_id, timestamp, category, decision, username, org_id, action_type,
 deny_reason` (metadata only — no prompt or parameter content). Exportable to
-CSV / SIEM / JSON Lines. Recorded only for licensed users under an enforced org
-policy — which `YOUR_ORG` has (AI Governance, 5 seats, active).
+CSV / SIEM / JSON Lines. Recorded only for licensed users under an enforced
+organization policy.
