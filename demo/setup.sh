@@ -52,7 +52,17 @@ for d in "$POISONED_DIR" "$APPROVED_DIR"; do
 done
 
 say "Clean prior demo state"
-sbx rm gov-demo gov-demo-claude --force >/dev/null 2>&1 && ok "removed old demo sandboxes" || warn "no demo sandboxes to remove"
+# Keep a RUNNING demo sandbox — it's the pre-warm that makes Beat 3 instant.
+# Only stale/stopped ones are cleared. Use reset.sh for a true teardown.
+KEPT_WARM=0
+for s in gov-demo gov-demo-claude; do
+  if sbx ls 2>/dev/null | awk -v n="$s" '$1==n && $3=="running"{f=1} END{exit !f}'; then
+    ok "keeping warm sandbox '$s' — Beat 3 will reuse it (no cold start)"; KEPT_WARM=1
+  else
+    sbx rm "$s" --force >/dev/null 2>&1 && ok "removed stale sandbox '$s'" || true
+  fi
+done
+[ "$KEPT_WARM" -eq 1 ] || warn "no pre-warmed sandbox — Beat 3 will cold-start (~30-60s). Pre-warm before a talk."
 sbx mcp rm approved-downloader >/dev/null 2>&1 || true
 sbx mcp rm poisoned-demo      >/dev/null 2>&1 || true
 for p in "$POISONED_PORT" "$APPROVED_PORT"; do

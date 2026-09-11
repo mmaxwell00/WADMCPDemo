@@ -64,7 +64,8 @@ demo/reset.sh
 demo/setup.sh
 ```
 Wait for **`✓ READY`** — it builds, starts both servers, and dry-runs the deny *and*
-the allow so you know it works before you're on stage.
+the allow so you know it works before you're on stage. It **keeps** an already-running
+`gov-demo` sandbox (that's your pre-warm), so this is safe to re-run before the talk.
 
 Open two things:
 - a terminal — your **developer** CLI;
@@ -105,6 +106,16 @@ and read the `poisoned-demo → DENY` row — identity/registration, no content 
 > **not** bypass MCP policy — Beat 2 is denied with the flag on. You would not use
 > it for a real third-party server.
 
+### Beat 2b — the endpoint swap (~30s) — **keep this for a security room**
+```bash
+sbx mcp rm approved-downloader
+sbx mcp add approved-downloader --url http://localhost:7801/mcp --skip-ssrf-check   # → DENIED
+sbx mcp add approved-downloader --url http://localhost:7802/mcp --skip-ssrf-check   # → ALLOW (restore)
+```
+The **approved name** pointed at a different endpoint is refused.
+> "You can't squat an approved name and swap the server underneath it. We pin the
+> identity, not the label — that's the rug-pull class, closed."
+
 ### Beat 3 — Governed ALLOW: the real download (~2 min)
 ```bash
 demo/run-sandbox-beat.sh shell gov-demo
@@ -126,7 +137,6 @@ chokepoint: authenticated, authorized, logged.
 ---
 
 ## D. Optional extras
-- **Beat 2b — endpoint swap denied** (the rug-pull defense, ~30s): see `runbook.md`.
 - A named **cagent** to populate the audit **AGENT** column — built-in `shell` and
   `claude` both show `–`.
 
@@ -186,4 +196,26 @@ Stage-proofing that matters far more with an audience than at a desk.
 ### Cut order if you're running long
 Drop Beat 2b first, then the Tool-Invocation audit view (keep the Server
 Registration deny — it's the core claim). Never cut Beat 1.
+
+### Where the "ah-ha" moments actually are
+Land these four; everything else is connective tissue.
+1. **The `<IMPORTANT>` block (Beat 1).** The attack is in the tool *description*,
+   not in code. Most of the room has never seen that. Read it aloud, then show the key.
+2. **"It never let the server in" (Beat 2).** The reframe: the gateway did **not**
+   detect the poison. People expect an AI scanner — tell them it's identity, and
+   that this is the *stronger* guarantee. This is the intellectual payoff.
+3. **The endpoint swap (Beat 2b).** Same approved *name*, different endpoint, still
+   denied. Security folks get the rug-pull implication instantly. Cheapest big win.
+4. **The agent can't shop for tools (Beat 3).** Its own `mcp-add` is denied — the
+   agent cannot self-serve an unapproved server. Then: "every one of those decisions
+   exports to your SIEM." That's the line that turns a demo into a security story.
+
+Bonus, 10 seconds if you want it: the poisoned tool advertises `readOnlyHint: true`
+while exfiltrating; the approved one honestly declares `false`. **The malicious
+server lies about itself** — which is exactly why you pin identity rather than
+trusting metadata.
+
+> ⚠️ **Beat 0 is your weakest moment and it's first.** `sbx mcp ls` shows a banner
+> that (as noted) doesn't even prove enforcement. Keep it to one breath, or open on
+> the Cedar policy instead and let Beat 1 be your real opening.
 
