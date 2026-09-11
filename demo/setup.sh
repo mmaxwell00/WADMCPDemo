@@ -87,8 +87,8 @@ fi
 say "Result"
 if [ "$FAILED" -eq 0 ]; then
   ok "READY. Servers up, poisoned denies, approved allows."
-  echo "     Next: follow DEMO-DAY.md.  Audit: app.docker.com → AI Platform → Audit logs"
-  echo "     In-sandbox beats (optional): demo/run-sandbox-beat.sh"
+  echo "     Beat 3 (the real npm download): demo/run-sandbox-beat.sh shell gov-demo"
+  echo "     Full script: DEMO-DAY.md   ·   Audit: app.docker.com → AI Platform → Audit logs"
 else
   fail "NOT ready — resolve the ✗/! items above, then re-run."
   exit 1

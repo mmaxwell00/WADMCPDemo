@@ -54,7 +54,9 @@ policy/README.md           Who configures vs demos, identity pinning, audit loca
 ```
 
 ## Quick start
+Run from the **repo root**:
 ```bash
+cd /path/to/docker-mcp-governance-demo
 demo/setup.sh     # builds, starts both servers, and dry-runs the deny AND the allow
 ```
 Wait for `✓ READY`. Then follow [`DEMO-DAY.md`](DEMO-DAY.md).

@@ -3,6 +3,10 @@
 The one page to follow when presenting. Talk track: `talking-points.md`.
 Full beat detail + fallbacks: `runbook.md`. Scripts: `demo/`.
 
+> ▶️ **Run every `demo/*.sh` command from the repo root**, e.g.
+> `cd /path/to/docker-mcp-governance-demo` first. They resolve paths relative to
+> the repo, so `demo/setup.sh` fails with *no such file or directory* from anywhere else.
+
 ---
 
 ## A. One-time setup on THIS laptop
