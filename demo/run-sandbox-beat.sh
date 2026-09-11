@@ -30,6 +30,10 @@ echo "  Filesystem-access policy MUST allow (READ+WRITE):"
 printf "    \033[36m%s\033[0m\n" "$WORKSPACE_DIR"
 
 say "Launch governed sandbox ($SBX_NAME, agent=$AGENT)"
+if sbx ls 2>/dev/null | awk -v n="$SBX_NAME" '$1==n && $3=="running"{f=1} END{exit !f}'; then
+  ok "reusing the running sandbox '$SBX_NAME' — no cold start (pre-warm before a talk)"
+  launched=1
+else
 sbx rm "$SBX_NAME" --force >/dev/null 2>&1 || true
 launched=0
 for attempt in 1 2 3; do
@@ -41,6 +45,7 @@ for attempt in 1 2 3; do
     warn "launch failed — see /tmp/sbx-run.log"; tail -3 /tmp/sbx-run.log; exit 1
   fi
 done
+fi
 [ "$launched" -eq 1 ] || { warn "could not launch after retries — is the fs policy path exactly the one printed above?"; exit 1; }
 ok "sandbox $SBX_NAME running"
 

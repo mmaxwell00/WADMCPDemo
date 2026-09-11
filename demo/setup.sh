@@ -2,8 +2,8 @@
 # setup.sh — bring the Docker MCP Governance demo to a known-good pre-demo state.
 # Idempotent: safe to run repeatedly. Path-independent (derives repo from itself).
 #
-#   Core demo needs NO sandbox — just this script. The in-sandbox beats are
-#   optional (see run-sandbox-beat.sh).
+#   Beat 3 (the real npm download) runs in a sandbox via run-sandbox-beat.sh,
+#   which needs the org Filesystem-access policy. See DEMO-DAY.md.
 set -uo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -34,11 +34,13 @@ ok "sbx $(sbx version 2>/dev/null | awk '{print $3}')  •  node $(node --versio
 ORG_LINE="$(sbx mcp ls 2>/dev/null | head -1)"; ok "governance: ${ORG_LINE}"
 warn "^ confirm that is the org your MCP policy lives in (wrong org = confusing denies later)"
 # Beat 3 really downloads from the npm registry — catch guest-WiFi/proxy now, not on stage.
-if npm view left-pad version >/dev/null 2>&1; then
-  ok "npm registry reachable (Beat 3 npm pack will work)"
+NPMWARM="$(mktemp -d)"
+if npm pack left-pad --prefer-offline --pack-destination "$NPMWARM" >/dev/null 2>&1; then
+  ok "npm cache warm for left-pad — Beat 3 works even if the room's Wi-Fi dies"
 else
-  warn "npm registry NOT reachable — Beat 3 (npm pack) will hang ~60s then fail on this network"
+  warn "could not fetch left-pad — Beat 3 WILL fail. Get on a working network once to warm the cache"
 fi
+rm -rf "$NPMWARM"
 
 say "Build servers (if needed)"
 for d in "$POISONED_DIR" "$APPROVED_DIR"; do

@@ -151,3 +151,39 @@ policies stay put for next time.
 | `npm pack` hangs ~60s then errors | no npm-registry access (guest Wi-Fi / proxy). **Test this before you present** |
 | ports 7801/7802 in use | `demo/reset.sh`. If you must change ports, you **must also update the pinned `identityURL`** in the MCP policy — otherwise approved-downloader is denied |
 | Audit page "Something went wrong" | reload the page; it's transient |
+
+---
+
+## G. Presenting to a ROOM (30–40 people)
+Stage-proofing that matters far more with an audience than at a desk.
+
+### Before you walk in
+- **Pre-warm, and do NOT reset afterwards.** On the venue network run:
+  ```bash
+  demo/setup.sh && demo/run-sandbox-beat.sh shell gov-demo
+  ```
+  This warms the npm cache *and* leaves `gov-demo` running. Beat 3 then reuses the
+  live sandbox (no 30–60s cold start) and packs from cache — so **Beat 3 survives
+  the room's Wi-Fi dying.** Running `reset.sh` before the talk throws both away.
+- **Terminal at ~18–20pt**, high contrast. Your back row is 40 feet away.
+- **Pre-open the audit log already filtered**, in two tabs — don't fight the filter
+  dropdowns live, they're fiddly:
+  - Registrations: `…/admin/ai-governance/audit-logs?action_type=server_registration`
+  - Tool calls: `…/admin/ai-governance/audit-logs?action_type=tool_invocation`
+
+  Browser zoom ~150%.
+- **Screenshot both audit views as a fallback.** The console throws a transient
+  "Something went wrong" occasionally — if it does that on stage, show the still
+  and keep moving rather than reloading in silence.
+
+### During
+- `sbx mcp add` prints several INFO lines before the verdict. Say *"watch the last
+  line"* **before** you press enter, so 40 people aren't reading proxy noise.
+- The decoy key in Beat 1 is the visual punchline — pause on it.
+- If anything stalls, narrate the architecture rather than watching a spinner; you
+  have the diagram slide for exactly this.
+
+### Cut order if you're running long
+Drop Beat 2b first, then the Tool-Invocation audit view (keep the Server
+Registration deny — it's the core claim). Never cut Beat 1.
+

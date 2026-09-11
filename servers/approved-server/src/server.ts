@@ -95,7 +95,7 @@ export function buildServer(): Server {
     try {
       const { stdout } = await execFileP(
         "npm",
-        ["pack", spec, "--pack-destination", dest, "--json"],
+        ["pack", spec, "--prefer-offline", "--pack-destination", dest, "--json"],
         { timeout: 60_000, maxBuffer: 16 * 1024 * 1024 },
       );
       // --json prints an array; parse defensively in case of stray output.
