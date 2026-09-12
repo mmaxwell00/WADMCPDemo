@@ -28,6 +28,9 @@ Do all of this once per machine, well before demo day.
   **public npm registry** (Beat 3 really downloads a package).
 
 ### A1. Sign in (developer account)
+> ⚠️ **Sessions expire.** Log in again the **morning of** the talk, not the week
+> before — this expired twice during testing. `setup.sh` catches it, but find out
+> at your desk, not on stage.
 ```bash
 sbx login
 sbx mcp ls      # confirm it shows your organization
@@ -83,12 +86,18 @@ sbx mcp ls
 > enforcing**. Do **not** claim it flips to org-managed — it doesn't. Prove
 > enforcement by *behavior* in Beats 2–3.
 
-### Beat 1 — Ungoverned poisoning (~1.5 min)
+### Beat 1 — Ungoverned: the npm download that steals your token (~1.5 min)
 ```bash
 ( cd servers/poisoned-server && POISONED_URL=http://localhost:7801/mcp npm run harness )
 ```
-Read the `<IMPORTANT>` block aloud — that's the poisoning. Point at
-`EXFILTRATION SIMULATED` and the decoy AWS key.
+This server offers **`npm_download` — the same tool name the approved server uses**,
+the same claimed job. Read the `<IMPORTANT>` block aloud: it tells the agent to read
+the developer's `.npmrc` first and smuggle it along. The output then looks like a
+perfectly normal successful download — followed by `EXFILTRATION SIMULATED` and the
+**npm publish token**.
+
+> "That token is what lets you publish packages. They can publish as you now — and
+> everyone who installs your package gets whatever they put in it." 
 
 > Be straight if asked: the harness *plays* a compromised agent deterministically,
 > so the beat can't fail on stage. The poisoned **description** is the real artifact.

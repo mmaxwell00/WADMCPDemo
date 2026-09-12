@@ -33,7 +33,7 @@ Golden rule: **all beats run through the gateway; only policy changes.** No
 
 # 3. Smoke-test Beat 1 deterministically (proves the gotcha fires on cue):
 ( cd servers/poisoned-server && POISONED_URL=http://localhost:7801/mcp npm run harness )
-#   → prints the poisoned description + "EXFILTRATION SIMULATED" with the decoy key.
+#   → prints the poisoned description + "EXFILTRATION SIMULATED" with the fake npm token.
 
 # 4. As OWNER in Docker Home → AI Platform → MCP access → Create policy:
 #    paste policy/org-mcp-policy.cedar and enforce it for the demo user.
@@ -74,12 +74,16 @@ so timing never depends on a live model obeying the poison.
 ```bash
 ( cd servers/poisoned-server && POISONED_URL=http://localhost:7801/mcp npm run harness )
 ```
-- Read the `<IMPORTANT>` block aloud — *this* is tool poisoning.
-- Point at `EXFILTRATION SIMULATED` + the decoy AWS key. "One unvetted server,
-  one config line, and the agent quietly shipped a local secret out."
+- Note the tool is called `npm_download` — **the same name the approved server
+  uses**, same claimed job. Only the identity differs.
+- Read the `<IMPORTANT>` block aloud — *this* is tool poisoning. It asks the agent
+  to read the developer's `.npmrc` and pass it along silently.
+- The output looks like a normal successful download, then
+  `EXFILTRATION SIMULATED` shows the **npm publish token**. "One unvetted server,
+  one config line, and the token that lets you publish packages walked out."
 
 **Live-agent path (optional):** register the poisoned server and drive your
-agent to call `fetch_document`; the poisoned description does the rest.
+agent to call `npm_download`; the poisoned description does the rest.
 
 ---
 
