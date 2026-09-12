@@ -140,8 +140,19 @@ Public at **github.com/mmaxwell00/WADMCPDemo**. The repo is **genericized** —
 live in `LOCAL-NOTES.md`, which is **gitignored and must stay that way**. Commits
 use a GitHub noreply author so no personal email appears in metadata.
 
-`docs/index.html` is a presenter's step-by-step guide (also publishable via
-GitHub Pages from the `/docs` folder).
+`docs/index.html` is a presenter's step-by-step guide, served live via GitHub
+Pages from `/docs` at <https://mmaxwell00.github.io/WADMCPDemo/> — it updates on
+every push, no separate publish step.
+
+`docs/MCP-Governance-Demo-Guide.pdf` is a print version of that guide.
+**It does not regenerate itself** — after editing the guide, rebuild it with:
+
+```bash
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --headless=new --no-pdf-header-footer --virtual-time-budget=15000 \
+  --print-to-pdf="$PWD/docs/MCP-Governance-Demo-Guide.pdf" \
+  "file://$PWD/docs/index.html"
+```
 
 ---
 
