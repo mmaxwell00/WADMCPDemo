@@ -32,6 +32,7 @@ const PX = {
   "beat2-deny.png": [3200, 892], "beat2b-rm.png": [3200, 416],
   "beat2b-swap-deny.png": [3200, 892], "beat2b-restore-allow.png": [3200, 892],
   "beat3-sandbox.png": [3200, 2796],
+  "audit-server-registration.png": [1840, 365], "audit-tool-invocation.png": [1840, 185],
 };
 for (const f of Object.keys(PX)) if (!fs.existsSync(SHOTS + f)) throw new Error("missing screenshot " + SHOTS + f);
 
@@ -310,31 +311,31 @@ function verdict(s, text, color, x = 10.9, y = 0.45) {
   const s = N.slide();
   header(s, "THE AUDIT TRAIL · DOCKER HOME", [{ text: "Every decision, " }, { text: "on the record", accent: true }],
     "AI Platform → Audit logs, signed in as an org owner. Two event types tell the whole story.");
-  N.label(s, "ROWS PRODUCED BY THIS RUN", 0.62, 1.85, 6);
-  N.table(s, ["Event type", "Principal", "Resource", "Decision"], [
-    ["Server Registration", "developer", "poisoned-demo", "DENY"],
-    ["Server Registration", "developer", "approved-downloader  (at :7801)", "DENY"],
-    ["Server Registration", "developer", "approved-downloader  (at :7802)", "ALLOW"],
-    ["Tool Invocation", "developer", "approved-downloader : npm_download", "ALLOW"],
-    ["Tool Invocation", "developer", "mcp-add  (poisoned-demo)", "DENY"],
-  ], 0.62, 2.2, [1.75, 1.05, 2.75, 0.95], { size: 10.5, rowH: 0.36 });
+  // Two real Docker Home captures (owner view, 2026-09-14), stacked full width
+  // and cropped to the table rows so the back row can read the verdicts.
+  const aw = 11.0, ax = 1.15; let ay = 1.8;
+  N.label(s, "EVENT TYPE = SERVER REGISTRATION  ·  Beat 2 deny at 15:18, Beat 2b swap at 15:32", ax, ay, aw, { size: 10.5 });
+  ay += 0.3;
+  ay += shot(s, "audit-server-registration.png", ax, ay, aw) + 0.24;
+  N.label(s, "EVENT TYPE = TOOL INVOCATION  ·  Beat 3, one gateway-client run", ax, ay, aw, { size: 10.5 });
+  ay += 0.3;
+  ay += shot(s, "audit-tool-invocation.png", ax, ay, aw) + 0.22;
   N.bullets(s, [
-    { b: "Registration plane:", t: " who tried to bring which server in, and the verdict." },
-    { b: "Tool-invocation plane:", t: " what the agent actually called through the gateway." },
-    { b: "Metadata only:", t: " decision, principal, resource, deny reason. No prompt or parameter content." },
+    { b: "Registration plane:", t: " poisoned-demo DENY; approved name at :7801 DENY; :7802 ALLOW." },
+    { b: "Metadata only:", t: " decision, principal, resource, deny reason. No parameter content." },
+  ], 0.85, ay, 5.6, 7.0 - ay, { size: 11, space: 3 });
+  N.bullets(s, [
+    { b: "Tool-invocation plane:", t: " npm_download ALLOW; the agent's own mcp-add DENY." },
     { b: "Exportable", t: " to CSV, JSON Lines, and your SIEM." },
-  ], 0.85, 4.75, 6.0, 2.0, { size: 12, space: 5 });
-  // Placeholder for the owner's Docker Home screenshot
-  N.card(s, 7.3, 1.85, 5.45, 4.85, { dash: true, fill: "061B44", trans: 20, soft: true });
-  N.badge(s, "ic_policy.png", 7.3 + (5.45 - 0.9) / 2, 3.0, 0.9);
-  N.txt(s, "Paste your Docker Home audit-log screenshot here", 7.5, 4.1, 5.05, 0.5, { fontSize: 14, bold: true, color: P.WHITE, align: "center" });
-  N.txt(s, "Owner login only. Filter: Event type = Server Registration, then Tool Invocation.\nPre-open both views before the talk.", 7.5, 4.65, 5.05, 0.9, { fontSize: 11, color: P.ACCENT_LIGHT, align: "center" });
+  ], 6.7, ay, 4.5, 7.0 - ay, { size: 11, space: 3 });
   N.logo(s);
   s.addNotes(
     "WHAT THIS SHOWS\n" +
     "Durable MCP audit logging is the AI Governance feature in Docker Home, not the local sbx policy log (which is network and filesystem only). Fields include timestamp, category, decision, username, org_id, action_type, deny_reason.\n\n" +
-    "HOW TO CAPTURE THE SCREENSHOT\n" +
-    "Sign in to Docker Home as the org owner. AI Platform, Audit logs. Filter Event type = Server Registration and screenshot; then Event type = Tool Invocation and screenshot. The rows in the table on this slide were produced by the 2026-09-14 run.\n\n" +
+    "THE TWO CAPTURES\n" +
+    "Both are the real Docker Home owner view from the 2026-09-14 run, filtered to that day. Left: Event type = Server Registration shows poisoned-demo DENY, approved-downloader DENY (the :7801 swap) and ALLOW (the :7802 restore), all within the same second of Beat 2b. Right: Event type = Tool Invocation shows mcp-add DENY and approved-downloader:npm_download ALLOW at the same timestamp, which is the single gateway-client run of Beat 3. The npm-installer rows are from a different demo on the same org and can be ignored or filtered out with the search box.\n\n" +
+    "TO RECAPTURE\n" +
+    "Sign in to Docker Home as the org owner. AI Platform, Audit logs. Set Event type and the date range, then screenshot. The URLs with action_type=server_registration and action_type=tool_invocation can be bookmarked and pre-opened in two tabs.\n\n" +
     "SAY\n" +
     "Read the row: resource poisoned-demo, decision DENY. There is no content field because nothing was scanned. Point at the matching approved-downloader ALLOW for contrast. Then: every one of these exports to your SIEM.\n\n" +
     "ANTICIPATED Q&A\n" +

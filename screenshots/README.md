@@ -11,6 +11,7 @@ The deck built from them is `slides/MCP-Governance-Demo-Screenshots.pptx`.
 | `png/beat2-deny.png` | Beat 2 — `registration denied … blocked by policy` |
 | `png/beat2b-rm.png`, `png/beat2b-swap-deny.png`, `png/beat2b-restore-allow.png` | Beat 2b — the three-line endpoint swap |
 | `png/beat3-sandbox.png` | Beat 3 — `npm_download` ALLOW and the agent's `mcp-add` DENY, inside the sandbox |
+| `png/audit-server-registration.png`, `png/audit-tool-invocation.png` | Docker Home → AI Platform → Audit logs (owner view), filtered by event type, cropped from a window capture |
 | `raw/<slug>.cmd` / `raw/<slug>.txt` | The exact command and its captured output (ANSI colours kept) |
 | `capture.sh` | Runs one command under a pseudo-TTY and saves it to `raw/` |
 | `render.mjs` | Turns `raw/` into `png/` with headless Chrome (needs `npm install` here) |
