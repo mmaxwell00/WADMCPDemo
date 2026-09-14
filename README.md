@@ -39,6 +39,10 @@ DEMO-DAY.md                One page to follow when presenting (start here)
 runbook.md                 Keystroke-level, timed beat script + fallbacks
 talking-points.md          5-minute speaker script + Q&A prep
 slides/                    mcp-governance.pptx — the talk deck
+                           MCP-Governance-Demo-Screenshots.pptx — screenshot edition (no live typing)
+                           deck-src/  build_deck.js + theme; `node build_deck.js` regenerates it
+screenshots/               Real captured output per beat (png/), the raw captures, and
+                           the capture/render scripts — see screenshots/README.md
 demo/setup.sh              Build, start servers, dry-run deny+allow (idempotent)
 demo/reset.sh              Full teardown
 demo/run-sandbox-beat.sh   Beat 3 — governed sandbox calls npm_download via gateway

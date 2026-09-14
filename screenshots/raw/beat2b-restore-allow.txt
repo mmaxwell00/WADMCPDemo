@@ -1,0 +1,8 @@
+^DWARNING: --skip-ssrf-check suppresses the SSRF check for "approved-downloader"; "http://localhost:7802/mcp" is resolved regardless of whether it looks like a private, loopback, or cloud-metadata address — only proceed if you trust this host.
+Resolving MCP server "approved-downloader"...
+INFO: mcpruntime: probing URL as a server manifest
+INFO: mcpruntime: URL is not a server-manifest source; falling through to remote-endpoint discovery
+INFO: mcpruntime: discovering remote server spec
+INFO: mcpruntime: remote endpoint reachable with no OAuth challenge; treating as no-auth server
+INFO: mcpruntime: remote server spec discovered
+MCP server "approved-downloader" registered (type: remote)

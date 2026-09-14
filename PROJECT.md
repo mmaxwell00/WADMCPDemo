@@ -158,8 +158,11 @@ every push, no separate publish step.
 
 ## 8. Open items
 
-- [ ] Dry run on the company laptop — its `sandbox-workspace` absolute path
-      differs, so the Filesystem-access policy must be re-pointed there.
+- [x] Dry run on the company laptop (2026-09-14, all beats pass). Rather than
+      re-point the Filesystem-access policy, the repo was cloned under a folder
+      the org policy already allows (`~/sandboxes/`), so Beat 3 mounted first try.
+      Screenshots of every beat live in `screenshots/`; the screenshot-edition
+      deck is `slides/MCP-Governance-Demo-Screenshots.pptx`.
 - [ ] Rehearse the narration once against the clock.
 - [ ] Optional: a named cagent so the audit `AGENT` column shows a real name.
 - [ ] Optional: the `@requireApproval` human-in-the-loop beat.

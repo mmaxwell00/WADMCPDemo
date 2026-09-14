@@ -12,3 +12,6 @@ LOCAL-NOTES.md
 
 # os
 .DS_Store
+
+# regenerable intermediates of the screenshot pipeline
+screenshots/html/

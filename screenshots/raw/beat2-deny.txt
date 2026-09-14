@@ -1,0 +1,8 @@
+^DWARNING: --skip-ssrf-check suppresses the SSRF check for "poisoned-demo"; "http://localhost:7801/mcp" is resolved regardless of whether it looks like a private, loopback, or cloud-metadata address — only proceed if you trust this host.
+Resolving MCP server "poisoned-demo"...
+INFO: mcpruntime: probing URL as a server manifest
+INFO: mcpruntime: URL is not a server-manifest source; falling through to remote-endpoint discovery
+INFO: mcpruntime: discovering remote server spec
+INFO: mcpruntime: remote endpoint reachable with no OAuth challenge; treating as no-auth server
+INFO: mcpruntime: remote server spec discovered
+ERROR: registration denied for MCP server "poisoned-demo": blocked by policy
