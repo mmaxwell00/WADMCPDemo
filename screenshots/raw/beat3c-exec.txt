@@ -1,17 +1,4 @@
-^D
-[1m== Prepare workspace (/Users/mark.maxwelldocker.com/sandboxes/WADMCPDemo/sandbox-workspace) ==[0m
-  [32m✓ installed MCP SDK[0m
-  Filesystem-access policy MUST allow (READ+WRITE):
-    [36m/Users/mark.maxwelldocker.com/sandboxes/WADMCPDemo/sandbox-workspace[0m
-
-[1m== Launch governed sandbox (gov-demo, agent=shell) ==[0m
-  [32m✓ sandbox gov-demo running[0m
-
-[1m== Attach approved server to the sandbox gateway ==[0m
-  [32m✓ approved-downloader loaded (live)[0m
-
-[1m== Drive the gateway from inside the sandbox ==[0m
-=== TOOLS VISIBLE THROUGH THE GOVERNED GATEWAY ===
+^D=== TOOLS VISIBLE THROUGH THE GOVERNED GATEWAY ===
  - code-mode  ::  Create a sandboxed JavaScript execution tool from a set of available t
  - mcp-add  ::  Add an MCP server to this session. The server is resolved from the gat
  - mcp-config-set  ::  Set per-session configuration overrides for an MCP server. The overrid
@@ -30,7 +17,3 @@ npm pack left-pad
 === BEAT 2 (agent-attributed): attempt poisoned via gateway ===
 primordial register tool: mcp-add
 register attempt ERROR (expected if denied): MCP error 0: policy denied /mcp-add: implicit
-
-[1mDone.[0m Check Audit logs → Event type = Tool Invocation:
-  approved-downloader:npm_download → ALLOW   |   mcp-add (poisoned) → DENY
-  (AGENT column shows a name ONLY for a named cagent; shell/claude show '–').

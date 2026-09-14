@@ -26,6 +26,14 @@ const convert = new Convert({
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 function clean(txt) {
+  // Collapse spinner redraws: a line beginning with ESC[1A (cursor up) replaces
+  // the line before it, exactly as the terminal showed it.
+  const lines = [];
+  for (let line of txt.split("\n")) {
+    while (/^\x1b\[\d*A/.test(line)) { lines.pop(); line = line.replace(/^\x1b\[\d*A/, ""); }
+    lines.push(line);
+  }
+  txt = lines.join("\n");
   return txt
     .replace(/^\^D/, "")                    // script(1) EOF echo
     .replace(/\x1b\[\d*G/g, "")             // cursor-column moves

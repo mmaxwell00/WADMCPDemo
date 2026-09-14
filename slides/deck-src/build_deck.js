@@ -31,7 +31,7 @@ const PX = {
   "beat0-mcp-ls.png": [3200, 688], "beat1-harness.png": [3200, 2524],
   "beat2-deny.png": [3200, 892], "beat2b-rm.png": [3200, 416],
   "beat2b-swap-deny.png": [3200, 892], "beat2b-restore-allow.png": [3200, 892],
-  "beat3-sandbox.png": [3200, 2796],
+  "beat3a-sbx-run.png": [3200, 1572], "beat3b-mcp-load.png": [3200, 416], "beat3c-exec.png": [3200, 1640],
   "audit-server-registration.png": [1840, 365], "audit-tool-invocation.png": [1840, 185],
 };
 for (const f of Object.keys(PX)) if (!fs.existsSync(SHOTS + f)) throw new Error("missing screenshot " + SHOTS + f);
@@ -85,6 +85,126 @@ function verdict(s, text, color, x = 10.9, y = 0.45) {
     "This governs by identity and registration, not by reading tool descriptions for bad intent. No AI-detects-the-poison magic. The unvetted server is stopped because it was never let in.\n\n" +
     "FORMAT NOTE\n" +
     "This edition uses screenshots captured from a real run (sbx v0.42.1, 2026-09-14) instead of typing live. Every command on these slides is the exact command that produced the output shown.");
+})();
+
+// ---------------------------------------------------------------------------
+// 1b) THE THREAT — why tool poisoning is dangerous
+// ---------------------------------------------------------------------------
+(() => {
+  const s = N.slide();
+  header(s, "THE THREAT · TOOL POISONING", [{ text: "The attack is in the " }, { text: "description", accent: true }, { text: ", not the code" }],
+    "Hidden instructions inside a tool's metadata steer the agent. The developer never sees them.");
+  // Left: how it works
+  const lx = 0.6, ly = 1.85, lw = 4.35, lh = 3.75;
+  N.card(s, lx, ly, lw, lh, {});
+  N.badge(s, "ic_chat.png", lx + 0.22, ly + 0.22, 0.6);
+  N.txt(s, "How it works", lx + 0.95, ly + 0.27, lw - 1.1, 0.5, { fontSize: 15, bold: true, color: P.WHITE, valign: "middle" });
+  N.bullets(s, [
+    { b: "Two audiences, one description.", t: " The model reads the full tool description. The UI shows the developer a one-line summary." },
+    { b: "The payload is prose.", t: " An IMPORTANT block tells the agent to read a secret file and pass it along as an argument, and to say nothing." },
+    { b: "The result looks normal.", t: " The tool returns a plausible answer, so nothing prompts a second look." },
+    { b: "Documented in the wild.", t: " Invariant Labs published the technique on 1 April 2025 with a working proof of concept against Cursor." },
+  ], lx + 0.25, ly + 1.0, lw - 0.5, lh - 1.1, { size: 11.5, space: 5 });
+  // Right: 2x2 grid of dangers
+  const gx = 5.2, gy = 1.85, gw = 3.68, gh = 1.8, gap = 0.16;
+  const dangers = [
+    ["ic_users.png", "Invisible to the developer", "Approval happened on a summary. The instructions that matter were never on screen."],
+    ["ic_lock.png", "Steals whatever the agent can reach", "In the public proof of concept: SSH private keys and the MCP config holding other servers' credentials. In our demo: the npm publish token."],
+    ["ic_sitemap.png", "Hijacks tools you already trust", "Tool shadowing: a poisoned server's description rewrote where a trusted email tool sent mail."],
+    ["ic_cogs.png", "Changes after you approved it", "Rug pull: the description that passed review is not the one the agent reads tomorrow."],
+  ];
+  dangers.forEach((d, i) => {
+    const x = gx + (i % 2) * (gw + gap), y = gy + Math.floor(i / 2) * (gh + gap);
+    N.card(s, x, y, gw, gh, { danger: true, trans: 40 });
+    N.badge(s, d[0], x + 0.2, y + 0.2, 0.52);
+    N.txt(s, d[1], x + 0.85, y + 0.22, gw - 1.0, 0.5, { fontSize: 12.5, bold: true, color: P.WHITE, valign: "middle" });
+    N.txt(s, d[2], x + 0.2, y + 0.85, gw - 0.4, gh - 0.95, { fontSize: 10.5, color: P.SUB });
+  });
+  N.callout(s, "warn", "Why scanning is not enough",
+    "The payload is plain language, it reads like documentation, and it can be swapped after review. The durable control is identity: only servers you registered get in, and every call is logged.",
+    { y: 5.85, h: 0.95, size: 12 });
+  N.logo(s);
+  s.addNotes(
+    "WHAT THIS SHOWS\n" +
+    "Tool poisoning in one picture: the attack lives in a tool's description (metadata), the model obeys it, the developer never sees it.\n\n" +
+    "HOW IT WORKS\n" +
+    "MCP clients pass the full tool description to the model as part of its context. Most UIs show the human only the tool name and a short summary. An attacker who controls a server can embed instructions in that description, typically inside an IMPORTANT block, that direct the agent to read a local secret and smuggle it out as a tool argument, and to hide that step. The tool then returns a normal-looking result.\n\n" +
+    "THE PUBLIC RECORD (Invariant Labs, 1 April 2025)\n" +
+    "Proof of concept against Cursor: a benign-looking add tool whose description told the agent to read ~/.ssh/id_rsa and ~/.cursor/mcp.json (which holds credentials for other MCP servers) and pass them along. A follow-up showed shadowing: a poisoned server's description redirected mail sent through a separate, trusted email tool to the attacker's address. A later post demonstrated extraction of WhatsApp chat history through MCP.\n\n" +
+    "SAY\n" +
+    "We normalized curl | bash for AI tools and called it developer experience. One README, one config line, and the agent trusts the server completely. The instructions that steal your keys were never on your screen.\n\n" +
+    "WHY IDENTITY, NOT SCANNING\n" +
+    "The payload is natural language. It reads like documentation, it can be paraphrased infinitely, and it can be swapped after review (rug pull). A content scanner is a losing race. Deciding which servers may be registered and calling only those, with every decision logged, does not depend on reading the poison at all. That is what the demo shows.\n\n" +
+    "ANTICIPATED Q&A\n" +
+    "Q: Would a modern model refuse those instructions? A: Sometimes. That is not a control. The description is the artifact; whether one model on one day obeys it is luck.\n" +
+    "Q: Is this only an MCP problem? A: No. Any plugin or tool-calling system that feeds tool metadata to a model has the same exposure. MCP makes it concrete because servers are pluggable and shared.");
+})();
+
+// ---------------------------------------------------------------------------
+// 1c) WHERE OWASP CALLS IT OUT
+// ---------------------------------------------------------------------------
+(() => {
+  const s = N.slide();
+  header(s, "WHERE OWASP CALLS IT OUT", [{ text: "Named in " }, { text: "three OWASP projects", accent: true }],
+    "Tool poisoning is a recognised category, not a lab curiosity.");
+  const cy = 1.85, ch = 3.75, cw = 3.95, gap = 0.14; let cx = 0.6;
+  const cols = [
+    {
+      hi: true, ic: "ic_policy.png", head: "OWASP MCP Top 10", sub: "v0.1 · Beta release, pilot testing · Incubator project",
+      entry: "MCP03:2025 Tool Poisoning",
+      quote: "“an adversary compromises the tools, plugins, or their outputs that an AI model depends on, injecting malicious, misleading, or biased context to manipulate model behavior.”",
+      also: ["MCP09:2025 Shadow MCP Servers", "MCP08:2025 Lack of Audit and Telemetry", "MCP02:2025 Privilege Escalation via Scope Creep"],
+    },
+    {
+      ic: "ic_robot.png", head: "OWASP Top 10 · Agentic Apps", sub: "for Agentic Applications · v1.0 · 9 December 2025",
+      entry: "ASI02 Tool Misuse",
+      quote: "Legitimate tools bent to illegitimate outcomes, including through poisoned tool metadata and unsafe tool chaining.",
+      also: ["ASI04 Agentic Supply Chain Vulnerabilities: MCP and A2A runtime components that can be poisoned"],
+    },
+    {
+      ic: "ic_chat.png", head: "OWASP Top 10 · LLM Apps", sub: "for LLM Applications · 2025 edition",
+      entry: "LLM01:2025 Prompt Injection",
+      quote: "Indirect injection: the model “accepts input from external sources, such as websites or files” that alter its behavior. A tool description is exactly such a source.",
+      also: [],
+    },
+  ];
+  cols.forEach(c => {
+    N.card(s, cx, cy, cw, ch, c.hi ? { hi: true } : {});
+    N.badge(s, c.ic, cx + 0.2, cy + 0.2, 0.52);
+    N.txt(s, c.head, cx + 0.85, cy + 0.18, cw - 1.0, 0.36, { fontSize: 12.5, bold: true, color: P.WHITE, valign: "middle" });
+    N.txt(s, c.sub, cx + 0.85, cy + 0.52, cw - 1.0, 0.3, { fontSize: 9, color: P.ACCENT_LIGHT });
+    N.txt(s, c.entry, cx + 0.2, cy + 0.98, cw - 0.4, 0.35, { fontSize: 13.5, bold: true, color: P.ACCENT });
+    N.txt(s, c.quote, cx + 0.2, cy + 1.38, cw - 0.4, 1.35, { fontSize: 10.5, italic: true, color: P.SUB });
+    if (c.also.length) {
+      N.label(s, "ALSO RELEVANT", cx + 0.2, cy + 2.72, cw - 0.4, { size: 9 });
+      N.bullets(s, c.also, cx + 0.2, cy + 3.0, cw - 0.4, ch - 3.05, { size: 9.5, space: 2 });
+    }
+    cx += cw + gap;
+  });
+  N.callout(s, "note", "This demo, mapped",
+    [{ text: "Beat 1 ", bold: true }, { text: "MCP03 tool poisoning  ·  " }, { text: "Beat 2 ", bold: true }, { text: "MCP09 shadow servers denied on identity  ·  " },
+     { text: "Beat 3 ", bold: true }, { text: "MCP02 the agent cannot widen its own scope  ·  " }, { text: "Audit ", bold: true }, { text: "MCP08 every decision logged" }],
+    { y: 5.85, h: 0.95, size: 11.5 });
+  N.logo(s);
+  s.addNotes(
+    "WHAT THIS SHOWS\n" +
+    "Tool poisoning is catalogued by OWASP in three places, so the room does not have to take our word for the threat.\n\n" +
+    "OWASP MCP TOP 10 (owasp.org/www-project-mcp-top-10)\n" +
+    "MCP03:2025 Tool Poisoning. Definition on the project page, verbatim: tool poisoning occurs when an adversary compromises the tools, plugins, or their outputs that an AI model depends on, injecting malicious, misleading, or biased context to manipulate model behavior. The detailed entry treats schema and metadata poisoning as the primary vector and cites Invariant Labs for the original disclosure. Its listed mitigations include signed schemas and manifests, an immutable registry, strong access controls, policy-as-code, provenance, and runtime enforcement, which is the shape of what the demo shows.\n" +
+    "Honesty: the project is v0.1, Phase 3 beta release and pilot testing, an OWASP Incubator project. Say beta if pressed.\n" +
+    "Also relevant to the demo: MCP09 Shadow MCP Servers (Beat 2, the unregistered server), MCP08 Lack of Audit and Telemetry (the audit slide), MCP02 Privilege Escalation via Scope Creep (Beat 3, the agent cannot mcp-add its own server), MCP01 Token Mismanagement and Secret Exposure (the leaked npm token in Beat 1).\n\n" +
+    "OWASP TOP 10 FOR AGENTIC APPLICATIONS (genai.owasp.org, v1.0, 9 December 2025)\n" +
+    "ASI02 Tool Misuse covers legitimate tools bent to illegitimate outcomes, including via poisoned tool metadata and unsafe tool chaining. ASI04 Agentic Supply Chain Vulnerabilities names dynamic MCP and A2A ecosystems whose runtime components can be poisoned. The ASI wording on the slide is a paraphrase, not a verbatim quote.\n\n" +
+    "OWASP TOP 10 FOR LLM APPLICATIONS 2025\n" +
+    "LLM01:2025 Prompt Injection. The entry defines indirect injection as the model accepting input from external sources, such as websites or files, that alters its behavior. A tool description delivered to the model is an external source in exactly that sense; tool poisoning is indirect prompt injection carried in tool metadata.\n\n" +
+    "SAY\n" +
+    "Three OWASP lists, three different angles, same conclusion: metadata the model reads is an attack surface. The MCP list goes further and names the controls: signed manifests, a registry you control, policy as code, runtime enforcement. That is the shape of what you are about to see.\n\n" +
+    "SOURCES\n" +
+    "https://owasp.org/www-project-mcp-top-10/\n" +
+    "https://github.com/OWASP/www-project-mcp-top-10/blob/main/2025/MCP03-2025%E2%80%93Tool-Poisoning.md\n" +
+    "https://genai.owasp.org/2025/12/09/owasp-top-10-for-agentic-applications-the-benchmark-for-agentic-security-in-the-age-of-autonomous-ai/\n" +
+    "https://genai.owasp.org/llmrisk/llm01-prompt-injection/\n" +
+    "https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks");
 })();
 
 // ---------------------------------------------------------------------------
@@ -274,24 +394,39 @@ function verdict(s, text, color, x = 10.9, y = 0.45) {
   header(s, "BEAT 3 · GOVERNED · ~2 MIN", [{ text: "The real download, " }, { text: "allowed and logged", accent: true }]);
   verdict(s, "ALLOW", OK, 9.0);
   verdict(s, "DENY", DANGER, 10.9);
-  cmdline(s, "demo/run-sandbox-beat.sh shell gov-demo", 0.62, 1.38, 8);
-  const iw = 6.15, iy = 1.9;
-  shot(s, "beat3-sandbox.png", 0.68, iy, iw);
-  const px = 7.25, pw = 5.5;
-  N.label(s, "WHAT IS HAPPENING", px, iy, pw);
+  // Left column: the two setup commands a developer types.
+  const lx = 0.68, lw = 5.6; let ly = 1.45;
+  N.label(s, "1  sbx run  ·  a governed sandbox on one mounted folder", lx, ly, lw, { size: 10.5 });
+  ly += 0.3;
+  ly += shot(s, "beat3a-sbx-run.png", lx, ly, lw) + 0.24;
+  N.label(s, "2  sbx mcp load  ·  attach the approved server to its gateway", lx, ly, lw, { size: 10.5 });
+  ly += 0.3;
+  ly += shot(s, "beat3b-mcp-load.png", lx, ly, lw) + 0.22;
   N.bullets(s, [
-    { b: "An agent inside a governed sandbox", t: " talks only to the gateway at mcp-gateway.docker.internal. The approved server is loaded into that gateway." },
-    { b: "npm_download runs npm pack left-pad.", t: " Tarball path, size, shasum and integrity come back. A real download of a real package." },
-    { b: "The agent tries to add the poisoned server itself", t: " via the gateway's mcp-add tool and gets policy denied /mcp-add: implicit. The agent cannot shop for tools." },
-    { b: "Both decisions are audited", t: " under Event type = Tool Invocation: npm_download ALLOW, mcp-add DENY." },
-  ], px, iy + 0.4, pw, 3.7, { size: 12, space: 6 });
-  N.callout(s, "note", "Say", "Same agent, same gateway. The unvetted server was blocked at the door; the curated one pulled the package, and every call is logged.", { x: px, y: 6.0, w: pw, h: 0.85, size: 11.5 });
+    { b: "One folder, nothing else.", t: " The org Filesystem policy must allow that path; the sandbox sees no other host files." },
+    { b: "Only registered servers can be loaded.", t: " Curated catalog in, everything else out." },
+  ], lx, ly, lw, 6.95 - ly, { size: 11, space: 3 });
+  // Right column: the call through the gateway.
+  const rx = 6.65, rw = 6.1; let ry = 1.45;
+  N.label(s, "3  sbx exec  ·  call npm_download through the gateway, from inside", rx, ry, rw, { size: 10.5, color: OK });
+  ry += 0.3;
+  ry += shot(s, "beat3c-exec.png", rx, ry, rw) + 0.22;
+  N.bullets(s, [
+    { b: "Inside, the only MCP endpoint is the gateway.", t: " gateway-client.mjs is a plain Node MCP client standing in for the agent. Not an LLM." },
+    { b: "npm_download runs npm pack left-pad.", t: " Tarball path, size, shasum and integrity. A real download of a real package." },
+    { b: "The agent's own mcp-add is denied.", t: " policy denied /mcp-add: implicit. It cannot shop for tools. Both calls land in the audit log." },
+  ], rx, ry, 5.6, 6.95 - ry, { size: 11, space: 3 });
   N.logo(s);
   s.addNotes(
     "WHAT THIS SHOWS\n" +
     "The curated path works. An agent in a governed sandbox calls npm_download through the gateway and gets left-pad-1.3.0.tgz with shasum and sha512 integrity. In the same run its own attempt to register the poisoned server via mcp-add is denied.\n\n" +
-    "HOW IT WORKS\n" +
-    "run-sandbox-beat.sh launches (or reuses) the gov-demo sandbox on the sandbox-workspace folder, runs sbx mcp load approved-downloader --sandbox gov-demo, then sbx exec runs gateway-client.mjs inside. That client lists gateway tools, calls npm_download, then calls the gateway's mcp-add primordial with the poisoned URL. The gateway refuses: policy denied /mcp-add: implicit.\n\n" +
+    "THE THREE COMMANDS (typed by hand, no wrapper script)\n" +
+    "1. sbx run shell -d --name gov-demo ./sandbox-workspace   (creates the governed sandbox; the mounted folder must be allowed by the org Filesystem policy)\n" +
+    "2. sbx mcp load approved-downloader --sandbox gov-demo   (attaches the registered server to that sandbox's gateway)\n" +
+    "3. sbx exec gov-demo -- node ~/sandboxes/WADMCPDemo/sandbox-workspace/gateway-client.mjs   (runs a plain Node MCP client inside the sandbox)\n" +
+    "The client lists the gateway's tools, calls npm_download, then calls the gateway's mcp-add primordial with the poisoned URL. The gateway refuses: policy denied /mcp-add: implicit. demo/run-sandbox-beat.sh does the same three steps with retries if you prefer one command.\n\n" +
+    "IS THAT CLAUDE OUTPUT? (you will be asked)\n" +
+    "No. Nothing on this slide came from a model. gateway-client.mjs is a deterministic MCP client that plays the agent so the beat cannot stall on stage. A live agent (sbx run claude) would make the same two gateway calls and get the same two decisions.\n\n" +
     "WHY A SANDBOX\n" +
     "There is no CLI way to invoke a registered tool outside a sandbox; the gateway only exists inside one. That also means the org Filesystem access policy must allow the workspace path (on this laptop it lives under ~/sandboxes, which the org already allows).\n\n" +
     "SAY\n" +

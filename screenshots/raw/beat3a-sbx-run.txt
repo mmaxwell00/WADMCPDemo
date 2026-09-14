@@ -1,0 +1,21 @@
+^D[38;2;65;72;104m──[m [38;2;128;128;128mRESOLVE SETUP[m
+   [38;2;128;128;128mresolving configuration…[m
+     [38;2;128;128;128msandbox  [m  [38;2;229;242;252mgov-demo[m
+     [38;2;128;128;128magent    [m  [38;2;229;242;252mshell[m
+     [38;2;128;128;128mworkspace[m  [38;2;229;242;252m/Users/mark.maxwelldocker.com/sandboxes/WADMCPDemo/sandbox-workspace[m [38;2;128;128;128m(rw)[m
+     [38;2;128;128;128mimage    [m  [38;2;229;242;252mdocker/sandbox-templates:shell-docker[m
+     [38;2;128;128;128mcpu      [m  [38;2;229;242;252m18[m
+     [38;2;128;128;128mmemory   [m  [38;2;229;242;252m32 GiB[m
+   [38;2;158;206;106m✓[m [38;2;128;128;128mconfiguration resolved[m
+[38;2;65;72;104m──[m [38;2;128;128;128mPREPARE IMAGE[m
+   [38;2;128;128;128m→ pull[m [38;2;122;162;247mdocker/sandbox-templates:shell-docker[m
+   [38;2;255;117;160m⠧[m [38;2;128;128;128mfinalizing image…[m[K
+[1A   [38;2;255;117;160m⠇[m [38;2;128;128;128mfinalizing image…[m[K
+[1A   [38;2;255;117;160m⠏[m [38;2;128;128;128mfinalizing image…[m[K
+[1A[K   [38;2;158;206;106m✓[m [38;2;128;128;128mimage ready[m
+[38;2;65;72;104m──[m [38;2;128;128;128mCREATE SANDBOX[m
+   [38;2;158;206;106m✓[m [38;2;128;128;128mCreated sandbox[m [38;2;229;242;252mgov-demo[m
+
+Starting shell agent in sandbox 'gov-demo'...
+Workspace: /Users/mark.maxwelldocker.com/sandboxes/WADMCPDemo/sandbox-workspace
+cfdd24ab-ea82-4409-bde8-91cb8548406a
